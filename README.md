@@ -1,6 +1,7 @@
 
 # solscanner.py
 
+
 `solscanner.py` is een parallelle SOCKS5 Nmap-scanner geschreven in Python. Het ondersteunt:
 
 - **Rotatie-proxies** (uit `rotation_proxies.txt`)  
