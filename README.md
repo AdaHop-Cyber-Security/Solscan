@@ -106,6 +106,7 @@ sudo python3 solscanner.py --init
 
 Dit doet:
 
+
 1. Installeert de systeem-pakketten:
 
    ```bash
@@ -117,7 +118,7 @@ Dit doet:
 
 ---
 
-## Proxy-modi
+## Proxy-modes
 
 ### Rotatie-modus
 
