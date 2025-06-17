@@ -2,7 +2,7 @@
 # Solscanner.py
 
 
-`solscanner.py` is een parallelle SOCKS5 Nmap-scanner geschreven in Python3. Written by Pin3apple (KZ) for Sollie.
+`solscanner.py` is een parallelle SOCKS5 Nmap scanner geschreven in Python3. By Pin3apple (KZ) for Sollie.
 
 Het ondersteunt:
 
