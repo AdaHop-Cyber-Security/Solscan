@@ -141,7 +141,7 @@ python3 solscanner.py \
   --mode rotation \
   --workers 10 \
   --target-file target.txt \
-  --nmap-cmd "-sS -Pn" \
+  --nmap-cmd "-sT -sV -Pn" \
   --preports 80 443
 ```
 
@@ -160,13 +160,13 @@ python3 solscanner.py \
   --mode proxy \
   --workers 5 \
   --target-file target.txt \
-  --nmap-cmd "-sS -Pn" \
+  --nmap-cmd "-sT -sV -Pn" \
   --preports 80 443
 ```
 
 ---
 
-## Overige modi
+## Overige modes
 
 * **wireguard**: roteert door `wireguard/*.conf`-bestanden
 * **no-vpn**: scant rechtstreeks via je eigen IP (zonder proxy)
