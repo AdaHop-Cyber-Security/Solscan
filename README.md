@@ -37,7 +37,6 @@ Deze README richt zich op de twee primaire modi:
   ```bash
   pip install pysocks requests
   
-````
 
 * Systeemtools:
 
