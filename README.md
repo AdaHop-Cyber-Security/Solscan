@@ -205,9 +205,9 @@ Individuele logs vind je in de `logs/`-map.
 
 ---
 
-## Tips & best practices
+## Best practices
 
 * **Houd proxy-lijsten actueel**: de Webshare.com API kan ze automatisch verversen.
 * **Voer health-checks uit**: roep periodiek de functie `health_check_proxies()` aan.
-* **Switch modi**: als `rotation` niet genoeg exit-IP-diversiteit biedt, probeer `--mode proxy`.
+* **Switch modes**: als `rotation` niet genoeg exit-IP-diversiteit biedt, probeer `--mode proxy`.
 * **Scan alleen met toestemming**: voer scans alleen uit op hosts/netwerken waarvoor je expliciete toestemming hebt.
