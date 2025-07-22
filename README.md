@@ -2,12 +2,12 @@
 
 ---
 
-# SolWalk - Advanced Nmap evasive parallel scanner
+# SolWalk - A Advanced Network Attack Orchestrator
 
 [![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
 
-A tool for cyber security professionals by cyber security professionals - designed for Sollie 
+A tool for cyber security professionals by cyber security professionals - designed for Sollie.
 
 ---
 
@@ -16,40 +16,43 @@ A tool for cyber security professionals by cyber security professionals - design
 - [Belangrijkste Kenmerken](#belangrijkste-kenmerken)
 - [Hoe het Werkt](#hoe-het-werkt)
 - [Vereisten](#vereisten)
-- [Installatie](#installatie)
-- [Configuratie](#configuratie)
-- [Gebruik](#gebruik-Usage)
+- [Installatie & Configuratie](#installatie--configuratie)
+  - [Stap 1: Installatie](#stap-1-installatie)
+  - [Stap 2: Configuratie (`config.ini`)](#stap-2-configuratie-configini)
+  - [Stap 3: Doelen & Proxy's](#stap-3-doelen--proxys)
+- [Gebruik (Usage)](#gebruik-usage)
   - [Argumenten](#argumenten)
 - [Voorbeelden](#voorbeelden)
-  - [Voorbeeld 1: Standaard Nmap-scan](#voorbeeld-1-standaard-nmap-scan)
-  - [Voorbeeld 2: Meerdere doelen scannen via WireGuard](#voorbeeld-2-meerdere-doelen-scannen-via-wireguard)
-  - [Voorbeeld 3: Geavanceerde firewall-ontwijkingstest](#voorbeeld-3-geavanceerde-firewall-ontwijkingstest)
-  - [Voorbeeld 4: Nmap-scan via roterende SOCKS5-proxy's](#voorbeeld-4-nmap-scan-via-roterende-socks5-proxys)
 - [De Output Begrijpen](#de-output-begrijpen)
 - [Disclaimer](#disclaimer)
 
 ## Belangrijkste Kenmerken
 
-- **Multi-Attack Modules**: Voer verschillende soorten aanvallen uit, van standaard Nmap-scans tot geavanceerde Layer 3/4-ontwijkingstechnieken.
+- **Multi-Module Framework**: Voer diverse scans uit, van standaard Nmap-verkenning tot geavanceerde firewall-ontwijkingstechnieken en live kwetsbaarheidsscans.
+  - **Nieuw - `vuln-scan` Module**: Voert een diepe Nmap-scan uit en controleert de gevonden softwareversies direct tegen de live **Vulners API** voor bekende CVE's.
 - **Geavanceerd Anonymity Framework**: Routeer verkeer via:
-  - **WireGuard**: Automatisch verbinden en rouleren van WireGuard VPN-tunnels.
+  - **WireGuard**: Automatisch verbinden en rouleren van WireGuard VPN-tunnels op een thread-veilige manier.
   - **SOCKS5 Proxies**: Gebruik statische of roterende SOCKS5-proxy's met `proxychains4`.
-  - **Direct**: Standaard directe verbindingen.
-- **VPN Lekbeveiliging**: Een ingebouwde veiligheidscontrole stopt de uitvoering als het IP-adres van de VPN lekt, tenzij handmatig overschreven.
+  - **Direct**: Standaard directe verbindingen (met interactieve waarschuwing).
+- **Flexibele Configuratie**: Beheer alle paden en API-sleutels via een eenvoudig `config.ini` bestand. Geen aanpassingen in de code nodig.
+- **Geavanceerde Debugging**: Gebruik `-v` of `-vv` om precies te zien wat het script doet, van de Nmap-commando's tot de ruwe XML-output en API-payloads.
 - **Parallelle Uitvoering**: Gebruikt een thread pool om aanvallen op meerdere doelen tegelijk uit te voeren, wat de efficiëntie drastisch verhoogt.
 - **Geautomatiseerde Installatie**: Een `--init` vlag om alle systeem- en Python-afhankelijkheden automatisch te installeren.
 - **Gedetailleerde Logging**: Elke aanval wordt opgeslagen in een uniek logbestand met details over de exit-node, tijd en resultaten.
 
 ## Hoe het Werkt
 
-De orchestrator beheert een pool van "exit nodes" (WireGuard-configuraties of SOCKS5-proxy's) en een lijst van doelen. Voor elk doel wijst een worker-thread een exit-node toe, stelt de netwerkomgeving in (bijv. het opzetten van een VPN-tunnel) en voert de geselecteerde aanval uit. Na de aanval wordt de omgeving weer opgeruimd, bijv. de VPN-verbinding wordt verbroken. Dit zorgt ervoor dat elke aanval geïsoleerd en via een andere route kan worden uitgevoerd.
+SolWalk beheert een pool van "exit nodes" (WireGuard-configuraties of SOCKS5-proxy's) en een lijst van doelen. Voor elk doel wijst een worker-thread een exit-node toe, stelt de netwerkomgeving in (bijv. het opzetten van een VPN-tunnel) en voert de geselecteerde scan uit. Na de taak wordt de omgeving weer opgeruimd. De `vuln-scan` module parseert de Nmap-output, extraheert software- en OS-informatie, en stuurt deze naar de Vulners API voor een real-time kwetsbaarheidsanalyse.
 
 ## Vereisten
 
 - **Besturingssysteem**: Een op Debian gebaseerd Linux-systeem (bijv. Kali Linux, Ubuntu).
-- **Rechten**: `sudo` of `root`-toegang is vereist voor het installeren van pakketten, het beheren van WireGuard-interfaces en het uitvoeren van Scapy-aanvallen.
+- **Rechten**: `sudo` of `root`-toegang is vereist voor het installeren van pakketten, het beheren van WireGuard-interfaces en het uitvoeren van bepaalde Nmap-scans.
+- **API-sleutel (optioneel)**: Voor de `vuln-scan` module is een gratis API-sleutel van [vulners.com](https://vulners.com/) vereist.
 
-## Installatie
+## Installatie & Configuratie
+
+### Stap 1: Installatie
 
 1.  **Kloon de repository:**
     ```bash
@@ -60,120 +63,128 @@ De orchestrator beheert een pool van "exit nodes" (WireGuard-configuraties of SO
 2.  **Voer de automatische installatie uit:**
     Deze stap installeert `nmap`, `proxychains4`, `wireguard-tools` en alle benodigde Python-bibliotheken.
     ```bash
-    sudo python3 orchestrator.py --init
-    ```
-    Volg daarna de instructies om uw configuratiebestanden aan te maken.
-
-## Configuratie
-
-Voordat u de tool kunt gebruiken, moet u de volgende mappen en bestanden aanmaken in dezelfde directory als het script:
-
-1.  **Doelen (`target.txt`)**:
-    Maak een bestand genaamd `target.txt` en voeg één doel, IP-adres of domein, per regel toe.
-    ```
-    192.168.1.1
-    scanme.nmap.org
-    10.0.0.5
+    sudo python3 solwalk.py --init
     ```
 
-2.  **WireGuard-configuraties (optioneel)**:
-    Maak een map genaamd `wireguard` en plaats al uw `.conf` bestanden voor WireGuard hierin.
-    ```
-    /pad/naar/script/
-    ├── wireguard/
-    │   ├── wg-nl-01.conf
-    │   ├── wg-us-02.conf
-    │   └── wg-de-03.conf
-    └── orchestrator.py
-    ```
-    *Opmerking: het script gebruikt het pad `/home/kali/sollie/wireguard`. Pas de `WG_CONFIG_DIR` variabele in het script aan als uw pad anders is.*
+### Stap 2: Configuratie (`config.ini`)
 
-3.  **Proxy-lijsten (optioneel)**:
-    Maak `rotation_proxies.txt` en/of `webshare_proxies.txt`. De proxy's moeten in het `user:pass@host:port` formaat zijn.
-    *`rotation_proxies.txt`*:
-    ```
-    gebruiker1:wachtwoord123@proxy.example.com:8080
-    gebruiker2:wachtwoord456@123.45.67.89:9090
-    ```
+Maak een bestand genaamd `config.ini` in dezelfde map als het script. Dit bestand centraliseert al je instellingen.
 
-## Gebruik
+```ini
+[paths]
+# Locatie voor WireGuard .conf bestanden
+wg_config_dir = /home/kali/sollie/wireguard
+
+# Standaard bestand met doelwitten
+target_file = target.txt
+
+# Map waar logs worden opgeslagen
+log_dir = logs
+
+# Bestand met roterende SOCKS5 proxies
+proxy_list_rotation = rotation_proxies.txt
+
+# Bestand met statische SOCKS5 proxies
+proxy_list_static = webshare_proxies.txt
+
+[api]
+# API-sleutel voor de vuln-scan module
+vulners_api_key = JOUW_VULNERS_API_SLEUTEL_HIER
+```
+*Tip: Je kunt de API-sleutel ook als omgevingsvariabele instellen: `export VULNERS_API_KEY='jouw_sleutel'`*
+
+### Stap 3: Doelen & Proxy's
+
+Maak de bestanden aan zoals gespecificeerd in je `config.ini`.
+
+1.  **Doelen (`target.txt`)**: Eén doel (IP of domein) per regel.
+2.  **Proxy-lijsten**: `rotation_proxies.txt` en/of `webshare_proxies.txt` met proxy's in `user:pass@host:port` formaat.
+3.  **WireGuard-map**: Plaats je `.conf` bestanden in de map die je hebt ingesteld in `wg_config_dir`.
+
+## Gebruik (Usage)
 
 De tool wordt volledig via de command-line bediend.
 
 ```bash
-sudo python3 orchestrator.py --mode [MODE] --attack-type [ATTACK] [TARGET_OPTIONS]
+sudo python3 solwalk.py [TARGETS] [ATTACK] [MODE] [OPTIONS]
 ```
 
 ### Argumenten
 
-| Groep                        | Argument             | Beschrijving                                                                                                              | Standaardwaarde                |
-| ---------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| **Required Arguments**       | `-t`, `--target`       | Een enkel doel-IP-adres.                                                                                                  | -                              |
-|                              | `-tf`, `--target-file` | Een bestand met doelen, één per regel.                                                                                    | `target.txt`                   |
-| **Attack Configuration**     | `--attack-type`      | Het type aanval: `nmap`, `scapy-overlap`, `scapy-tinyfrag`, `scapy-invalidflags`, `http-smuggle`.                             | `nmap`                         |
-|                              | `--nmap-cmd`         | De Nmap-commando-string die moet worden uitgevoerd.                                                                       | `-sS -Pn -T4 --top-ports 1000` |
-|                              | `--attack-port`      | De doelpoort voor Scapy- en Socket-aanvallen.                                                                             | `443`                          |
-| **Execution & Anonymity**    | `--workers`          | Het aantal parallelle aanvalsthreads.                                                                                     | `1`                            |
-|                              | `--mode`             | De routeringsmethode: `direct`, `wireguard`, `proxy`, `rotation`.                                                           | `direct`                       |
-|                              | `--stealth`          | Voegt een willekeurige vertraging tussen taken toe.                                                                       | Uitgeschakeld                  |
-|                              | `--overwrite`        | Forceert de scan, zelfs als er een VPN-lek wordt gedetecteerd. **GEBRUIK MET VOORZICHTIGHEID!**                             | Uitgeschakeld                  |
-| **Setup**                    | `--init`             | Installeert alle afhankelijkheden en sluit af.                                                                            | -                              |
+| Groep                        | Argument             | Beschrijving                                                              |
+| ---------------------------- | -------------------- | ------------------------------------------------------------------------- |
+| **General Options**          | `-h`, `--help`         | Toon dit helpbericht en sluit af.                                         |
+|                              | `--init`             | Installeer alle afhankelijkheden en sluit af.                             |
+|                              | `-v`, `-vv`          | Verhoog het detailniveau van de output (info, debug).                     |
+| **Target Specification**     | `-t`, `--target`       | Een enkel doel-IP-adres of hostnaam.                                      |
+|                              | `-tf`, `--target-file` | Een bestand met doelen (standaard: `target.txt`).                         |
+| **Attack Configuration**     | `--attack-type`      | Het type aanval (`nmap`, `vuln-scan`, `scapy-*`).                           |
+|                              | `--nmap-cmd`         | De Nmap-commando-string die moet worden uitgevoerd.                       |
+|                              | `--attack-port`      | De doelpoort voor Scapy- en Socket-aanvallen (standaard: 443).             |
+| **Execution & Anonymity**    | `--workers`          | Het aantal parallelle aanvalsthreads (standaard: aantal doelen).           |
+|                              | `--mode`             | De routeringsmethode (`direct`, `wireguard`, `proxy`, `rotation`).          |
+|                              | `--timeout`          | Timeout in seconden voor Nmap-scans (standaard: 600).                     |
+|                              | `--run-when-up`      | Controleer proxy's "on-the-fly" in plaats van vooraf.                   |
+|                              | `--overwrite`        | Forceert de scan, zelfs als er een VPN-lek wordt gedetecteerd.            |
 
 ## Voorbeelden
 
-### Voorbeeld 1: Standaard Nmap-scan
-
-Voer een eenvoudige Nmap SYN-scan uit tegen een enkel doel via een directe verbinding.
+**1. Live Kwetsbaarheidsscan (Nieuw!)**
+Scan een doelwit, detecteer services en OS (`-sV -O`), en controleer deze direct op bekende CVE's via de Vulners API.
 ```bash
-sudo python3 orchestrator.py --attack-type nmap -t scanme.nmap.org
+sudo python3 solwalk.py -t 185.145.27.105 --attack-type vuln-scan --nmap-cmd "-sT -sV -O -p 80,443 -T3"
 ```
 
-### Voorbeeld 2: Meerdere doelen scannen via WireGuard
-
-Scan alle doelen uit `target.txt` met 5 parallelle workers, waarbij elke worker een willekeurige WireGuard-configuratie uit de `wireguard/` map gebruikt.
+**2. Meerdere doelen scannen via WireGuard**
+Scan alle doelen uit `target.txt` met 5 parallelle workers, waarbij elke worker een unieke WireGuard-tunnel gebruikt.
 ```bash
-sudo python3 orchestrator.py --mode wireguard --workers 5 -tf target.txt
+sudo python3 solwalk.py -tf target.txt --mode wireguard --workers 5
 ```
 
-### Voorbeeld 3: Geavanceerde firewall-ontwijkingstest
-
-Test een webserver op poort 80 tegen een "tiny fragment" aanval. Deze aanval vereist `sudo`.
+**3. Debugging Sessie**
+Voer een `vuln-scan` uit met maximale output om precies te zien welke commando's worden uitgevoerd en welke data naar de API wordt gestuurd.
 ```bash
-sudo python3 orchestrator.py --attack-type scapy-tinyfrag --attack-port 80 -t 192.168.1.10
-```
+sudo python3 solwalk.py -t scanme.nmap.org --attack-type vuln-scan -vv```
 
-### Voorbeeld 4: Nmap-scan via roterende SOCKS5-proxy's
-
-Voer een Nmap TCP-scan (`-sT`) uit op de top 20 poorten tegen meerdere doelen, gebruikmakend van 10 workers die roteren door de proxy's in `rotation_proxies.txt`.
+**4. Nmap-scan via Roterende SOCKS5-proxy's**
+Voer een Nmap TCP-scan (`-sT`) uit op de top 20 poorten, gebruikmakend van 10 workers die roteren door de proxy's in `rotation_proxies.txt`.
 ```bash
-sudo python3 orchestrator.py --mode rotation --workers 10 -tf target.txt --nmap-cmd "-sT -Pn --top-ports 20"
+sudo python3 solwalk.py -tf target.txt --mode rotation --workers 10 --nmap-cmd "-sT -Pn --top-ports 20"
 ```
 
 ## De Output Begrijpen
 
-Aan het einde van de uitvoering wordt een samenvatting getoond:
+De samenvatting aan het einde geeft de status van elke taak weer:
 
 ```
 ==================== ATTACK RUN SUMMARY ====================
-[✓] scanme.nmap.org  | Completed    | Exit: direct                       | Details: Nmap scan logged to logs/scanme.nmap.org_nmap_20231027-143000.log
-[✓] 192.168.1.10     | SUCCESS      | Exit: wg-nl-01.conf                | Details: CRITICAL: 'tiny fragment' attack successful. Port is OPEN.
-[x] 10.0.0.5         | Failed       | Details: VPN leak detected
+[✓] 185.145.27.105   | SUCCESS      | Exit: (SOCKS5) via 166.0.68.90:6550  | Details: Vulnerabilities found. Full report in log.
+[✓] 192.168.1.10     | Completed    | Exit: wg-nl-01.conf                  | Details: Nmap scan logged to logs/192.168.1.10_nmap_...
+[x] 10.0.0.5         | Failed       | Exit: No Proxy                       | Details: No working proxy available.
 ================================================================
 ```
 
-- **`[✓]`**: Geeft aan dat de taak succesvol is uitgevoerd. De status kan zijn:
-  - `Completed`: De taak (bv. Nmap-scan) is voltooid. Details staan in het logbestand.
-  - `SUCCESS`: De specifieke aanval (bv. Scapy) was succesvol en heeft een kwetsbaarheid blootgelegd.
-  - `Response`: De aanval ontving een onverwachte maar interessante reactie.
-- **`[x]`**: Geeft aan dat de taak is mislukt of overgeslagen (`Failed`, `Skipped`). De details geven de reden aan.
+- **`[✓]` (Groen)**: De taak is voltooid.
+  - `SUCCESS`: De `vuln-scan` heeft kwetsbaarheden gevonden.
+  - `Completed`: De taak is succesvol afgerond (bv. Nmap-scan voltooid, geen CVE's gevonden).
+- **`[x]` (Rood)**: De taak is mislukt (`Failed`) of overgeslagen (`Skipped`). De details geven de reden aan.
 
 ## Disclaimer
 
-**Deze tool is uitsluitend bedoeld voor educatieve doeleinden en geautoriseerde security-audits.**
+**Deze tool is uitsluitend bedoeld voor educatieve doeleinden en geautoriseerde security-audits.** Het gebruik van deze tool tegen netwerken of systemen zonder expliciete voorafgaande toestemming is illegaal. De ontwikkelaar aanvaardt geen aansprakelijkheid en is niet verantwoordelijk voor misbruik of schade veroorzaakt door dit programma.
 
-Het gebruik van deze tool tegen netwerken of systemen zonder expliciete voorafgaande toestemming is illegaal. De ontwikkelaar aanvaard geen aansprakelijkheid en is niet verantwoordelijk voor misbruik of schade veroorzaakt door dit programma.
-
-**Belangrijke operationele opmerkingen:**
+### Belangrijke operationele opmerkingen:
 
 - **Scapy & Proxies**: Scapy-aanvallen (`scapy-overlap`, etc.) werken op een laag niveau (Layer 3) en **zullen SOCKS5-proxy's omzeilen**. Ze worden altijd verzonden via de actieve netwerkinterface (bijv. `eth0` of een WireGuard-interface).
 - **VPN-lekken**: De `--overwrite` vlag is gevaarlijk en kan uw echte IP-adres blootstellen. Gebruik deze alleen als u de risico's volledig begrijpt.
+- **Als je de melding ```'subprocess.CalledProcessError: Command '['/usr/bin/python3', '-m', 'pip', 'install', '--upgrade', 'pip']' returned non-zero exit status 1.``` '** krijgt kun je via venv pip upgraden. Gebruik pip nooit buiten een virtual enviroment!
+
+  ```bash
+  source venv/bin/activate
+  python -m ensurepip --upgrade
+  python -m pip install --upgrade pip
+  ```
+
+  ```bash
+  pip install requests
+  ```
